@@ -51,9 +51,27 @@ class RSA(object):
         self.file_to_decrypt = args.decrypt
         self.output_file = args.output
         self.key_file_name = args.key
+        self.generate_key = args.generate
         self.__input = ''
         self.__output = ''
         self.__key = ''
+
+        self.handle_input()
+
+    def handle_input(self):
+        if self.generate_key:
+            n, e, d = self.generate_key_pair()
+            f = self.output_file
+            self.output_file = f + '.pub'
+            self.__output = '{}\n{}'.format(n, e)
+            self.save_to_file()
+            self.output_file = f + '.prv'
+            self.__output = '{}\n{}'.format(n, d)
+            self.save_to_file()
+            self.output_file = f
+            self.__output = ''
+        else:
+            raise RuntimeError('invalid input')
 
     def generate_key_pair(self):
         prime = RSA.prime(random.randint(10, 20))  # Magic number
@@ -76,6 +94,11 @@ class RSA(object):
 
         return n, e, d
 
+    def save_to_file(self):
+        print('save_to_file(self)')
+        with open(self.output_file, 'w') as f:
+            f.write(self.__output)
+
 
 if __name__ == "__main__":
-    print(RSA().generate_key_pair())
+    RSA()

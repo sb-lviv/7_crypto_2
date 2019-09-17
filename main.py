@@ -33,6 +33,11 @@ class RSA(object):
         else:
             raise ValueError('You must specify a high or low number')
 
+    @staticmethod
+    def read_from_file(filename):
+        with open(filename, 'r') as f:
+            return f.read()
+
     def __init__(self):
         parser = argparse.ArgumentParser()
         input_group = parser.add_mutually_exclusive_group(required=True)
@@ -41,7 +46,8 @@ class RSA(object):
         input_group.add_argument('--gen-key', dest='generate',
                                  help='prompt to generate key pair',
                                  action='store_true')
-        parser.add_argument('--key', help='path to key')
+        parser.add_argument('--key', default='key',
+                            help='path to key (default key.pub, key.prv)')
         parser.add_argument('--output', default='out.txt', required=True,
                             help='path to resulting file')
         args = parser.parse_args()
@@ -54,7 +60,7 @@ class RSA(object):
         self.generate_key = args.generate
         self.__input = ''
         self.__output = ''
-        self.__key = ''
+        self.__key = []
 
         self.handle_input()
 
@@ -70,6 +76,24 @@ class RSA(object):
             self.save_to_file()
             self.output_file = f
             self.__output = ''
+        elif self.file_to_encrypt is not None:
+            key = RSA.read_from_file(self.key_file_name + '.pub')
+            if not key:
+                raise FileNotFoundError('key is empty')
+            mod, exp = key.split('\n')
+            self.__key = (int(mod), int(exp))
+            self.__input = RSA.read_from_file(self.file_to_encrypt)
+            self.encrypt()
+            self.save_to_file()
+        elif self.file_to_decrypt is not None:
+            key = RSA.read_from_file(self.key_file_name + '.prv')
+            if not key:
+                raise FileNotFoundError('key is empty')
+            mod, exp = key.split('\n')
+            self.__key = (int(mod), int(exp))
+            self.__input = RSA.read_from_file(self.file_to_decrypt)
+            self.encrypt()
+            self.save_to_file()
         else:
             raise RuntimeError('invalid input')
 
@@ -93,6 +117,13 @@ class RSA(object):
                 raise ValueError('secret key could not be found')
 
         return n, e, d
+
+    def encrypt(self):
+        self.__output = ((ord(x) ** self.__key[1]) % self.__key[0]
+                         for x
+                         in self.__input)
+        self.__output = (chr(x) for x in self.__output)
+        self.__output = ''.join(self.__output)
 
     def save_to_file(self):
         print('save_to_file(self)')

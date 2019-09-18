@@ -38,6 +38,11 @@ class RSA(object):
         with open(filename, 'r') as f:
             return f.read()
 
+    @staticmethod
+    def save_to_file(filename, data):
+        with open(filename, 'w') as f:
+            f.write(data)
+
     def __init__(self):
         parser = argparse.ArgumentParser()
         input_group = parser.add_mutually_exclusive_group(required=True)
@@ -58,44 +63,44 @@ class RSA(object):
         self.output_file = args.output
         self.key_file_name = args.key
         self.generate_key = args.generate
-        self.__input = ''
-        self.__output = ''
-        self.__key = []
 
     def handle_input(self):
         if self.generate_key:
-            n, e, d = self.generate_key_pair()
-            f = self.output_file
-            self.output_file = f + '.pub'
-            self.__output = '{}\n{}'.format(n, e)
-            self.save_to_file()
-            self.output_file = f + '.prv'
-            self.__output = '{}\n{}'.format(n, d)
-            self.save_to_file()
-            self.output_file = f
-            self.__output = ''
+            n, e, d = RSA.generate_key_pair()
+
+            output_file = self.output_file + '.pub'
+            output_text = '{}\n{}'.format(n, e)
+            RSA.save_to_file(output_file, output_text)
+
+            output_file = self.output_file + '.prv'
+            output_text = '{}\n{}'.format(n, d)
+            RSA.save_to_file(output_file, output_text)
+
         elif self.file_to_encrypt is not None:
             key = RSA.read_from_file(self.key_file_name + '.pub')
             if not key:
                 raise FileNotFoundError('key is empty')
-            mod, exp = key.split('\n')
-            self.__key = (int(mod), int(exp))
-            self.__input = RSA.read_from_file(self.file_to_encrypt)
-            self.encrypt()
-            self.save_to_file()
+            key = [int(x) for x in key.split('\n')]
+
+            data = RSA.read_from_file(self.file_to_encrypt)
+            data = RSA.encrypt(data, key)
+            RSA.save_to_file(self.output_file, data)
+
         elif self.file_to_decrypt is not None:
             key = RSA.read_from_file(self.key_file_name + '.prv')
             if not key:
                 raise FileNotFoundError('key is empty')
-            mod, exp = key.split('\n')
-            self.__key = (int(mod), int(exp))
-            self.__input = RSA.read_from_file(self.file_to_decrypt)
-            self.encrypt()
-            self.save_to_file()
+            key = [int(x) for x in key.split('\n')]
+
+            data = RSA.read_from_file(self.file_to_decrypt)
+            data = RSA.encrypt(data, key)
+            RSA.save_to_file(self.output_file, data)
+
         else:
             raise RuntimeError('invalid input')
 
-    def generate_key_pair(self):
+    @staticmethod
+    def generate_key_pair():
         prime = RSA.prime(random.randint(10, 20))  # Magic number
         p = next(prime)
         q = next(prime)
@@ -116,17 +121,11 @@ class RSA(object):
 
         return n, e, d
 
-    def encrypt(self):
-        self.__output = ((ord(x) ** self.__key[1]) % self.__key[0]
-                         for x
-                         in self.__input)
-        self.__output = (chr(x) for x in self.__output)
-        self.__output = ''.join(self.__output)
-
-    def save_to_file(self):
-        print('save_to_file(self)')
-        with open(self.output_file, 'w') as f:
-            f.write(self.__output)
+    @staticmethod
+    def encrypt(data, key):
+        output = ((ord(x) ** key[1]) % key[0] for x in data)
+        output = (chr(x) for x in output)
+        return ''.join(output)
 
 
 if __name__ == "__main__":

@@ -62,8 +62,6 @@ class RSA(object):
         self.__output = ''
         self.__key = []
 
-        self.handle_input()
-
     def handle_input(self):
         if self.generate_key:
             n, e, d = self.generate_key_pair()
@@ -132,4 +130,4 @@ class RSA(object):
 
 
 if __name__ == "__main__":
-    RSA()
+    RSA().handle_input()
